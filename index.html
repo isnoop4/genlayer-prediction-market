@@ -1,42 +1,127 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Prediction Market - GenLayer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prediction Market - GenLayer Integrations</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: white; padding: 40px; text-align: center; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        button { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: bold; }
-        button:hover { background: #4f46e5; }
-        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 40px auto; padding: 20px; background: #f4f6f9; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e1e4e8; }
+        h2 { margin-top: 0; color: #111; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .info-group { margin: 15px 0; font-size: 15px; }
+        .label { font-weight: bold; color: #555; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; }
+        .status-open { background: #fff3cd; color: #856404; }
+        .status-resolved { background: #d4edda; color: #155724; }
+        textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin: 10px 0; font-family: inherit; }
+        button { background: #4f46e5; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background: #4338ca; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .tx-log { margin-top: 15px; font-size: 13px; word-break: break-all; color: #6b7280; }
     </style>
+
+    <!-- Client SDK GenLayer -->
+    <script type="module">
+        import { createClient } from 'https://esm.sh/genlayer-js';
+
+        // Contract Address baru yang di-deploy
+        const CONTRACT_ADDRESS = "0xa568c8775527bf7CaFdBa848156ED7f0e12d1b9E"; 
+
+        const client = createClient({ 
+            chain: { id: 6174, rpcUrl: "https://studio.genlayer.com/api/rpc" } 
+        });
+
+        window.loadContractData = async function() {
+            try {
+                // Membaca data langsung dari smart contract (Read State)
+                const state = await client.readContract({ 
+                    address: CONTRACT_ADDRESS, 
+                    functionName: "get_market_state" 
+                });
+
+                document.getElementById("contract-question").innerText = state.question || "-";
+                
+                const statusEl = document.getElementById("contract-status");
+                if (state.is_resolved) {
+                    statusEl.innerText = "RESOLVED";
+                    statusEl.className = "status-badge status-resolved";
+                    document.getElementById("resolve-btn").disabled = true;
+                    document.getElementById("news-input").disabled = true;
+                } else {
+                    statusEl.innerText = "OPEN";
+                    statusEl.className = "status-badge status-open";
+                }
+
+                document.getElementById("contract-outcome").innerText = state.outcome;
+            } catch (err) {
+                console.error("Error reading contract:", err);
+                document.getElementById("tx-log").innerText = "Error loading state from contract.";
+            }
+        };
+
+        window.resolveMarket = async function() {
+            const newsSummary = document.getElementById("news-input").value.trim();
+            if (!newsSummary) {
+                alert("Please enter a news summary to resolve the market.");
+                return;
+            }
+
+            const btn = document.getElementById("resolve-btn");
+            btn.disabled = true;
+            btn.innerText = "Executing AI Consensus...";
+            document.getElementById("tx-log").innerText = "Submitting transaction to GenLayer...";
+
+            try {
+                // Eksekusi fungsi resolve_market ke Smart Contract (Write Call)
+                const txHash = await client.writeContract({
+                    address: CONTRACT_ADDRESS,
+                    functionName: "resolve_market",
+                    args: [newsSummary]
+                });
+
+                document.getElementById("tx-log").innerHTML = `<strong>Transaction Submitted!</strong><br>Hash: ${txHash}`;
+                
+                // Tunggu konsensus validator lalu perbarui tampilan data
+                setTimeout(window.loadContractData, 6000);
+            } catch (err) {
+                alert("Transaction failed: " + err.message);
+                btn.disabled = false;
+                btn.innerText = "Resolve Market via AI";
+                document.getElementById("tx-log").innerText = "Transaction failed.";
+            }
+        };
+
+        window.onload = window.loadContractData;
+    </script>
 </head>
 <body>
-
     <div class="card">
-        <h2>🔮 GenLayer AI Prediction Market</h2>
-        <p><strong>Question:</strong> Will Bitcoin hit $100k in 2026?</p>
-        <hr style="border-color: #334155;">
-        
-        <div>
-            <p>Paste latest news summary to resolve market with AI LLM consensus:</p>
-            <input type="text" id="newsInput" placeholder="e.g. Bitcoin reached $105,000 today on major exchanges.">
-            <br>
-            <button onclick="resolveMarket()">Resolve Market via GenLayer</button>
+        <h2>AI Prediction Market</h2>
+        <div class="info-group">
+            <span class="label">Question:</span> 
+            <span id="contract-question">Loading from smart contract...</span>
+        </div>
+        <div class="info-group">
+            <span class="label">Status:</span> 
+            <span id="contract-status" class="status-badge status-open">Loading...</span>
+        </div>
+        <div class="info-group">
+            <span class="label">Outcome State:</span> 
+            <span id="contract-outcome" style="font-weight: bold;">Loading...</span>
         </div>
 
-        <h3 id="status">Status: Market Active (Pending)</h3>
-    </div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
 
-    <script>
-        function resolveMarket() {
-            const news = document.getElementById('newsInput').value;
-            if(!news) { alert('Please enter a news summary'); return; }
-            document.getElementById('status').innerText = 'Status: Resolving with GenVM Consensuses...';
-            setTimeout(() => {
-                document.getElementById('status').innerText = 'Status: RESOLVED via AI Consensus!';
-            }, 3000);
-        }
-    </script>
+        <div class="info-group">
+            <label class="label" for="news-input">Input News Evidence:</label>
+            <textarea id="news-input" placeholder="Enter official news source summary to resolve market outcome..."></textarea>
+        </div>
+
+        <button id="resolve-btn" onclick="resolveMarket()">Resolve Market via AI</button>
+
+        <div id="tx-log" class="tx-log"></div>
+    </div>
 </body>
 </html>
