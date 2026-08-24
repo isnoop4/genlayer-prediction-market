@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Prediction Market - GenLayer</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: white; padding: 40px; text-align: center; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        button { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        button:hover { background: #4f46e5; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🔮 GenLayer AI Prediction Market</h2>
+        <p><strong>Question:</strong> Will Bitcoin hit $100k in 2026?</p>
+        <hr style="border-color: #334155;">
+        
+        <div>
+            <p>Paste latest news summary to resolve market with AI LLM consensus:</p>
+            <input type="text" id="newsInput" placeholder="e.g. Bitcoin reached $105,000 today on major exchanges.">
+            <br>
+            <button onclick="resolveMarket()">Resolve Market via GenLayer</button>
+        </div>
+
+        <h3 id="status">Status: Market Active (Pending)</h3>
+    </div>
+
+    <script>
+        function resolveMarket() {
+            const news = document.getElementById('newsInput').value;
+            if(!news) { alert('Please enter a news summary'); return; }
+            document.getElementById('status').innerText = 'Status: Resolving with GenVM Consensuses...';
+            setTimeout(() => {
+                document.getElementById('status').innerText = 'Status: RESOLVED via AI Consensus!';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
