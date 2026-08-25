@@ -11,38 +11,35 @@ class AIPredictionMarket(gl.Contract):
         self.is_resolved = False
         self.outcome = "PENDING"
 
-    @gl.public.view
-    def get_market_state(self) -> dict:
-        """Fungsi pembacaan state langsung untuk Frontend."""
-        return {
-            "question": self.question,
-            "is_resolved": self.is_resolved,
-            "outcome": self.outcome
-        }
-
     @gl.public.write
     def resolve_market(self, news_summary: str) -> str:
-        """Memanggil konsensus AI untuk menyelesaikan prediksi pasar."""
         if self.is_resolved:
             return f"Market already resolved as: {self.outcome}"
 
         q = self.question
 
-        # Memanggil konsensus AI dengan Lambda + Principle
-        result = gl.eq_principle.prompt_comparative(
-            lambda: f"Question: {q}\nNews Summary: {news_summary}\nAnalyze if the news summary confirms the question happens. Respond ONLY with 'YES' or 'NO'.",
-            "The output must strictly evaluate if the news summary answers the prediction question with YES or NO."
-        )
+        # Call the nondeterministic LLM directly inside the consensus block
+        def call_llm() -> str:
+            prompt = (
+                f"Analyze the following verifiable news evidence strictly:\n"
+                f"News Evidence: \"{news_summary}\"\n\n"
+                f"Question: \"{q}\"\n\n"
+                f"Based ONLY on the provided news evidence, has the event happened?\n"
+                f"Respond with EXACTLY one word: YES or NO. Do not add any other text."
+            )
+            return gl.nondet.exec_prompt(prompt)
 
-        res_str = str(result).upper()
+        # Apply Comparative Consensus on the LLM output
+        llm_decision = gl.eq_principle.ComparativeEq(call_llm)
+        clean_result = str(llm_decision).strip().upper()
 
-        if "YES" in res_str:
+        if "YES" in clean_result:
             self.outcome = "YES"
             self.is_resolved = True
             return "RESOLVED: YES"
-        elif "NO" in res_str:
+        elif "NO" in clean_result:
             self.outcome = "NO"
             self.is_resolved = True
             return "RESOLVED: NO"
         else:
-            return f"UNCLEAR: {result}"
+            return f"UNCLEAR: {clean_result}"
