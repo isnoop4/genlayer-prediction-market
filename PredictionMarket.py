@@ -56,3 +56,4 @@ class AIPredictionMarket(gl.Contract):
     @gl.public.view
     def get_question(self) -> str:
         return self.question
+
