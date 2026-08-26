@@ -10,50 +10,32 @@ class AIPredictionMarket(gl.Contract):
     def __init__(self, question: str):
         self.question = question
         self.is_resolved = False
-        self.verdict_json = json.dumps({
-            "verdict": "PENDING",
-            "score": 0,
-            "reasons": ["Market not resolved yet"],
-            "confidence": "LOW"
-        })
+        self.verdict_json = json.dumps({"verdict": "PENDING"})
 
     @gl.public.write
-    def resolve_market(self, news_summary: str) -> str:
+    def resolve_market(self, news_evidence: str) -> str:
         if self.is_resolved:
             return self.verdict_json
 
         q = self.question
 
-        def call_llm() -> str:
+        # Callback HANYA mengeksekusi LLM dan mengembalikan output murni LLM
+        def call_nondet() -> str:
             prompt = (
-                f"You are an impartial GenLayer validator evaluating a prediction market.\n\n"
-                f"Question: \"{q}\"\n"
-                f"Evidence: \"{news_summary}\"\n\n"
-                f"Rules:\n"
-                f"- Return valid JSON only.\n"
-                f"- Do not invent facts not present in the evidence.\n"
-                f"- Set verdict to YES, NO, or NEEDS_MORE_EVIDENCE.\n\n"
-                f"JSON schema:\n"
-                f"{{\n"
-                f'  "verdict": "YES" | "NO" | "NEEDS_MORE_EVIDENCE",\n'
-                f'  "score": 0-100,\n'
-                f'  "reasons": ["reason 1"],\n'
-                f'  "confidence": "LOW" | "MEDIUM" | "HIGH"\n'
-                f"}}"
+                f"Analyze this news evidence for the prediction: '{q}'.\n"
+                f"Evidence: '{news_evidence}'\n\n"
+                f"Respond ONLY with a JSON object format:\n"
+                f'{{"verdict": "YES" | "NO" | "NEEDS_MORE_EVIDENCE", "confidence": "HIGH" | "MEDIUM" | "LOW"}}'
             )
             return gl.nondet.exec_prompt(prompt)
 
-        # Comparative consensus on LLM JSON output
-        llm_decision = gl.eq_principle.ComparativeEq(call_llm)
-        self.verdict_json = str(llm_decision)
+        # Comparative Consensus mengevaluasi hasil eksekusi model nondeterministik
+        raw_result = gl.eq_principle.ComparativeEq(call_nondet)
+        
+        self.verdict_json = str(raw_result)
         self.is_resolved = True
         return self.verdict_json
 
     @gl.public.view
     def get_verdict(self) -> str:
         return self.verdict_json
-
-    @gl.public.view
-    def get_question(self) -> str:
-        return self.question
-
