@@ -1,45 +1,58 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 from genlayer import *
+import json
 
 class AIPredictionMarket(gl.Contract):
     question: str
     is_resolved: bool
-    outcome: str
+    verdict_json: str
 
     def __init__(self, question: str):
         self.question = question
         self.is_resolved = False
-        self.outcome = "PENDING"
+        self.verdict_json = json.dumps({
+            "verdict": "PENDING",
+            "score": 0,
+            "reasons": ["Market not resolved yet"],
+            "confidence": "LOW"
+        })
 
     @gl.public.write
     def resolve_market(self, news_summary: str) -> str:
         if self.is_resolved:
-            return f"Market already resolved as: {self.outcome}"
+            return self.verdict_json
 
         q = self.question
 
-        # Call the nondeterministic LLM directly inside the consensus block
         def call_llm() -> str:
             prompt = (
-                f"Analyze the following verifiable news evidence strictly:\n"
-                f"News Evidence: \"{news_summary}\"\n\n"
-                f"Question: \"{q}\"\n\n"
-                f"Based ONLY on the provided news evidence, has the event happened?\n"
-                f"Respond with EXACTLY one word: YES or NO. Do not add any other text."
+                f"You are an impartial GenLayer validator evaluating a prediction market.\n\n"
+                f"Question: \"{q}\"\n"
+                f"Evidence: \"{news_summary}\"\n\n"
+                f"Rules:\n"
+                f"- Return valid JSON only.\n"
+                f"- Do not invent facts not present in the evidence.\n"
+                f"- Set verdict to YES, NO, or NEEDS_MORE_EVIDENCE.\n\n"
+                f"JSON schema:\n"
+                f"{{\n"
+                f'  "verdict": "YES" | "NO" | "NEEDS_MORE_EVIDENCE",\n'
+                f'  "score": 0-100,\n'
+                f'  "reasons": ["reason 1"],\n'
+                f'  "confidence": "LOW" | "MEDIUM" | "HIGH"\n'
+                f"}}"
             )
             return gl.nondet.exec_prompt(prompt)
 
-        # Apply Comparative Consensus on the LLM output
+        # Comparative consensus on LLM JSON output
         llm_decision = gl.eq_principle.ComparativeEq(call_llm)
-        clean_result = str(llm_decision).strip().upper()
+        self.verdict_json = str(llm_decision)
+        self.is_resolved = True
+        return self.verdict_json
 
-        if "YES" in clean_result:
-            self.outcome = "YES"
-            self.is_resolved = True
-            return "RESOLVED: YES"
-        elif "NO" in clean_result:
-            self.outcome = "NO"
-            self.is_resolved = True
-            return "RESOLVED: NO"
-        else:
-            return f"UNCLEAR: {clean_result}"
+    @gl.public.view
+    def get_verdict(self) -> str:
+        return self.verdict_json
+
+    @gl.public.view
+    def get_question(self) -> str:
+        return self.question
