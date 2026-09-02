@@ -405,6 +405,46 @@
     }
   }
 
+  async function ensureCorrectNetwork() {
+    const targetChainId = chain?.id;
+    if (!targetChainId) return; // can't verify, let the wallet surface any error
+
+    const targetHex = "0x" + targetChainId.toString(16);
+
+    const currentHex = await window.ethereum.request({ method: "eth_chainId" });
+    if (currentHex.toLowerCase() === targetHex.toLowerCase()) return;
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: targetHex }],
+      });
+    } catch (switchErr) {
+      // 4902 = chain not yet added to the wallet
+      if (switchErr.code === 4902) {
+        const rpcUrl =
+          chain?.rpcUrls?.default?.http?.[0] ||
+          "https://studio.genlayer.com/api";
+
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: targetHex,
+            chainName: chain?.name || "GenLayer Studio",
+            rpcUrls: [rpcUrl],
+            nativeCurrency: chain?.nativeCurrency || {
+              name: "GEN",
+              symbol: "GEN",
+              decimals: 18,
+            },
+          }],
+        });
+      } else {
+        throw switchErr;
+      }
+    }
+  }
+
   async function connectWallet() {
     if (!window.ethereum) {
       alert("No wallet extension found. Install a browser wallet (e.g. MetaMask) to interact with this contract.");
@@ -413,6 +453,8 @@
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       connectedAddress = accounts[0];
+
+      await ensureCorrectNetwork();
 
       writeClient = createClient({ chain, account: connectedAddress });
 
@@ -445,9 +487,13 @@
 
     resolveBtn.disabled = true;
     txStatus.classList.remove("error");
-    txStatus.textContent = "Sending transaction…";
+    txStatus.textContent = "Checking wallet network…";
 
     try {
+      await ensureCorrectNetwork();
+
+      txStatus.textContent = "Sending transaction…";
+
       const hash = await writeClient.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "resolve_market",
