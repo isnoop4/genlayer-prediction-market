@@ -1,187 +1,483 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GenLayer AI Prediction Market</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 16px;
-    }
-    .card {
-      background-color: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 480px;
-      width: 100%;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    }
-    h2 {
-      margin-top: 0;
-      font-size: 1.5rem;
-      border-bottom: 1px solid #334155;
-      padding-bottom: 12px;
-    }
-    .question-box {
-      background-color: #0f172a;
-      padding: 12px 16px;
-      border-radius: 8px;
-      border-left: 4px solid #6366f1;
-      margin-bottom: 16px;
-    }
-    .question-title {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .question-text {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-top: 4px;
-    }
-    .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      background-color: #eab308;
-      color: #020617;
-      margin-bottom: 12px;
-    }
-    .status-badge.resolved {
-      background-color: #22c55e;
-      color: #020617;
-    }
-    .status-badge.resolving {
-      background-color: #3b82f6;
-      color: #ffffff;
-    }
-    textarea {
-      width: 100%;
-      box-sizing: border-box;
-      background-color: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #f8fafc;
-      padding: 12px;
-      font-size: 0.95rem;
-      resize: vertical;
-      min-height: 90px;
-      margin-bottom: 16px;
-    }
-    textarea:focus {
-      outline: none;
-      border-color: #6366f1;
-    }
-    button {
-      width: 100%;
-      background-color: #4f46e5;
-      color: #ffffff;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    button:hover {
-      background-color: #4338ca;
-    }
-    button:disabled {
-      background-color: #475569;
-      cursor: not-allowed;
-    }
-    .footer-info {
-      margin-top: 16px;
-      font-size: 0.75rem;
-      color: #64748b;
-      word-break: break-all;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prediction Market — GenLayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #171d27;
+    --panel: #1f2733;
+    --panel-border: #303b4a;
+    --paper: #e9e3d3;
+    --paper-ink: #1c1a14;
+    --paper-border: #d3c9ab;
+    --text: #e7e3d8;
+    --text-dim: #9aa3b2;
+    --gold: #c79a3e;
+    --gold-dim: #a8813a;
+    --yes: #4c9a6a;
+    --no: #c1553d;
+    --evidence: #c79a3e;
+    --pending: #6b7686;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .brand {
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--text-dim);
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+  }
+
+  button:active { transform: scale(0.98); }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  #connectBtn {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+  }
+
+  #connectBtn:hover:not(:disabled) { background: rgba(199, 154, 62, 0.1); }
+
+  #connectBtn.connected {
+    border-color: var(--panel-border);
+    color: var(--text-dim);
+  }
+
+  .question-panel {
+    background: var(--paper);
+    color: var(--paper-ink);
+    border-radius: 4px;
+    padding: 28px 26px;
+    border: 1px solid var(--paper-border);
+    box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.5);
+    margin-bottom: 24px;
+  }
+
+  .question-label {
+    font-size: 0.78rem;
+    color: #6b6248;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .question-text {
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 1.7rem;
+    font-weight: 500;
+    line-height: 1.28;
+  }
+
+  .question-text.placeholder { color: #8a8264; font-style: italic; }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--pending);
+    flex-shrink: 0;
+  }
+
+  .status-dot.resolved { background: var(--gold); }
+
+  .status-text {
+    font-size: 0.85rem;
+    color: #6b6248;
+  }
+
+  section {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+
+  section h2 {
+    font-family: 'Newsreader', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin: 0 0 6px;
+  }
+
+  section p.hint {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  input[type="text"], input[type="url"] {
+    width: 100%;
+    background: var(--ink);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 11px 12px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    margin-bottom: 14px;
+  }
+
+  input[type="text"]:focus, input[type="url"]:focus {
+    outline: none;
+    border-color: var(--gold-dim);
+  }
+
+  .resolve-btn {
+    background: var(--gold);
+    color: #1c1608;
+    width: 100%;
+    padding: 12px;
+  }
+
+  .resolve-btn:hover:not(:disabled) { background: #d6ab4c; }
+
+  .tx-status {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    min-height: 1.2em;
+  }
+
+  .tx-status.error { color: var(--no); }
+  .tx-status a { color: var(--gold); }
+
+  .verdict-card {
+    display: none;
+  }
+
+  .verdict-card.show { display: block; }
+
+  .verdict-badge {
+    display: inline-block;
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 4px 4px;
+    margin-bottom: 14px;
+  }
+
+  .verdict-badge.YES { color: var(--yes); }
+  .verdict-badge.NO { color: var(--no); }
+  .verdict-badge.NEEDS_MORE_EVIDENCE { color: var(--evidence); }
+
+  .verdict-meta {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .verdict-reason {
+    font-size: 0.94rem;
+    line-height: 1.6;
+    border-left: 2px solid var(--panel-border);
+    padding-left: 14px;
+  }
+
+  .contract-info {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    word-break: break-all;
+    border-top: 1px solid var(--panel-border);
+    padding-top: 16px;
+    margin-top: 4px;
+  }
+
+  .contract-info div { margin-bottom: 4px; }
+
+  .config-warning {
+    background: rgba(193, 85, 61, 0.12);
+    border: 1px solid rgba(193, 85, 61, 0.4);
+    color: #e2a190;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .config-warning code {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+</style>
 </head>
 <body>
 
-  <div class="card">
-    <h2>🔮 AI Prediction Market</h2>
+<div class="wrap">
 
-    <div class="question-box">
-      <div class="question-title">Market Question</div>
-      <div class="question-text">Will bitcoin reach $100.000 by end of August 2026</div>
-    </div>
+  <header>
+    <div class="brand">AI Prediction Market</div>
+    <button id="connectBtn">Connect wallet</button>
+  </header>
 
-    <div>
-      <span id="statusBadge" class="status-badge">PENDING</span>
-    </div>
+  <div id="configWarning" class="config-warning" style="display:none;">
+    Set <code>CONTRACT_ADDRESS</code> near the bottom of this file before
+    using this page — it currently still holds a placeholder value.
+  </div>
 
-    <div style="margin-bottom: 12px;">
-      <b>Outcome Verdict:</b> <span id="outcomeText" style="color: #cbd5e1;">PENDING RESOLUTION</span>
-    </div>
-
-    <label for="newsInput" style="display: block; font-size: 0.875rem; color: #94a3b8; margin-bottom: 6px;">Input News Evidence:</label>
-    <textarea id="newsInput" placeholder="Paste official news summary evidence to resolve market outcome via GenLayer consensus..."></textarea>
-
-    <button id="resolveBtn" onclick="resolveMarket()">Resolve Market via GenLayer AI</button>
-
-    <div class="footer-info">
-      <div><b>Contract Address:</b></div>
-      <div>0xF2803EB169D0eCb6286e787A05Aed2918A8D804e</div>
+  <div class="question-panel">
+    <div class="question-label">Market question</div>
+    <div id="questionText" class="question-text placeholder">Loading question…</div>
+    <div class="status-row">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText" class="status-text">Checking status…</span>
     </div>
   </div>
 
-  <script>
-    function resolveMarket() {
-      const input = document.getElementById('newsInput').value;
-      const statusBadge = document.getElementById('statusBadge');
-      const outcomeText = document.getElementById('outcomeText');
-      const btn = document.getElementById('resolveBtn');
-      
-      if (!input.trim()) {
-        alert("Please enter valid news evidence summary!");
-        return;
-      }
+  <div id="verdictCard" class="verdict-card">
+    <section>
+      <h2>Resolution</h2>
+      <div id="verdictBadge" class="verdict-badge"></div>
+      <div id="verdictMeta" class="verdict-meta"></div>
+      <div id="verdictReason" class="verdict-reason"></div>
+    </section>
+  </div>
 
-      btn.disabled = true;
-      statusBadge.innerText = 'RESOLVING VIA GENVM...';
-      statusBadge.className = 'status-badge resolving';
-      outcomeText.innerText = 'Evaluating LLM Consensus...';
+  <section id="resolveSection">
+    <h2>Resolve with evidence</h2>
+    <p class="hint">
+      The contract fetches this URL itself and asks GenLayer's validator
+      set to judge the market question against what it finds — it does
+      not trust typed-in claims. Use a source that answers the question
+      directly and won't change content between requests.
+    </p>
+    <label for="sourceUrl">Source URL</label>
+    <input type="url" id="sourceUrl" placeholder="https://example.com/news/article">
+    <button id="resolveBtn" class="resolve-btn" disabled>Connect wallet to resolve</button>
+    <div id="txStatus" class="tx-status"></div>
+  </section>
 
-      setTimeout(() => {
-        const text = input.toLowerCase();
-        let verdict = "YES";
-        let score = 95;
-        let confidence = "HIGH";
-        
-        // Dynamic detection matching the AI contract standard logic
-        if (text.includes('not') || text.includes('fail') || text.includes('didn') || text.includes('below') || text.includes('drop')) {
-          verdict = "NO";
-          score = 90;
-        } else if (text.trim().length < 15) {
-          verdict = "NEEDS_MORE_EVIDENCE";
-          confidence = "LOW";
-          score = 30;
-        }
+  <div class="contract-info">
+    <div>Contract: <span id="contractAddrDisplay">—</span></div>
+    <div>Network: <span id="networkDisplay">—</span></div>
+  </div>
 
-        statusBadge.innerText = 'RESOLVED';
-        statusBadge.className = 'status-badge resolved';
-        
-        let color = verdict === 'YES' ? '#4ade80' : (verdict === 'NO' ? '#f87171' : '#fbbf24');
-        outcomeText.innerHTML = `<b style="color: ${color};">${verdict}</b> (Score: ${score}, Confidence: ${confidence})`;
-        btn.disabled = false;
-      }, 1500);
+</div>
+
+<script type="module">
+  // ---------------------------------------------------------------
+  // CONFIGURATION — edit these two values for your deployment
+  // ---------------------------------------------------------------
+  const CONTRACT_ADDRESS = "0xYOUR_DEPLOYED_CONTRACT_ADDRESS";
+  // Use "studionet" while testing in GenLayer Studio, or
+  // "testnetAsimov" once you deploy to the public testnet.
+  const NETWORK = "studionet";
+  // ---------------------------------------------------------------
+
+  import { createClient } from "https://esm.sh/genlayer-js@latest";
+  import { studionet, testnetAsimov } from "https://esm.sh/genlayer-js@latest/chains";
+  import { TransactionStatus } from "https://esm.sh/genlayer-js@latest/types";
+
+  const chain = NETWORK === "testnetAsimov" ? testnetAsimov : studionet;
+
+  const readClient = createClient({ chain });
+
+  const el = (id) => document.getElementById(id);
+
+  const connectBtn = el("connectBtn");
+  const resolveBtn = el("resolveBtn");
+  const sourceUrlInput = el("sourceUrl");
+  const txStatus = el("txStatus");
+  const questionText = el("questionText");
+  const statusDot = el("statusDot");
+  const statusText = el("statusText");
+  const verdictCard = el("verdictCard");
+  const verdictBadge = el("verdictBadge");
+  const verdictMeta = el("verdictMeta");
+  const verdictReason = el("verdictReason");
+
+  let connectedAddress = null;
+  let writeClient = null;
+
+  el("contractAddrDisplay").textContent = CONTRACT_ADDRESS;
+  el("networkDisplay").textContent = chain.name || NETWORK;
+
+  if (CONTRACT_ADDRESS.includes("YOUR_DEPLOYED")) {
+    el("configWarning").style.display = "block";
+    resolveBtn.textContent = "Set CONTRACT_ADDRESS first";
+  }
+
+  function renderVerdict(verdictJsonStr) {
+    let data;
+    try {
+      data = JSON.parse(verdictJsonStr);
+    } catch {
+      return;
     }
-  </script>
+    if (!data.verdict || data.verdict === "PENDING") return;
+
+    verdictCard.classList.add("show");
+    verdictBadge.textContent = data.verdict.replace(/_/g, " ");
+    verdictBadge.className = "verdict-badge " + data.verdict;
+    verdictMeta.textContent = "Confidence: " + (data.confidence || "—");
+    verdictReason.textContent = data.reason || "";
+  }
+
+  async function loadState() {
+    try {
+      const [question, isResolved, verdictJson] = await Promise.all([
+        readClient.readContract({ address: CONTRACT_ADDRESS, functionName: "get_question", args: [] }),
+        readClient.readContract({ address: CONTRACT_ADDRESS, functionName: "get_is_resolved", args: [] }),
+        readClient.readContract({ address: CONTRACT_ADDRESS, functionName: "get_verdict", args: [] }),
+      ]);
+
+      questionText.textContent = question;
+      questionText.classList.remove("placeholder");
+
+      if (isResolved) {
+        statusDot.classList.add("resolved");
+        statusText.textContent = "Resolved";
+        resolveBtn.disabled = true;
+        resolveBtn.textContent = "Market already resolved";
+        renderVerdict(verdictJson);
+      } else {
+        statusText.textContent = "Awaiting resolution";
+        if (connectedAddress) {
+          resolveBtn.disabled = false;
+          resolveBtn.textContent = "Resolve market via GenLayer";
+        }
+      }
+    } catch (err) {
+      questionText.textContent = "Could not load contract state.";
+      console.error(err);
+    }
+  }
+
+  async function connectWallet() {
+    if (!window.ethereum) {
+      alert("No wallet extension found. Install a browser wallet (e.g. MetaMask) to interact with this contract.");
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      connectedAddress = accounts[0];
+
+      writeClient = createClient({ chain, account: connectedAddress });
+
+      connectBtn.textContent = connectedAddress.slice(0, 6) + "…" + connectedAddress.slice(-4);
+      connectBtn.classList.add("connected");
+
+      if (!CONTRACT_ADDRESS.includes("YOUR_DEPLOYED")) {
+        resolveBtn.disabled = false;
+        resolveBtn.textContent = "Resolve market via GenLayer";
+      }
+    } catch (err) {
+      console.error(err);
+      txStatus.textContent = "Wallet connection failed.";
+      txStatus.classList.add("error");
+    }
+  }
+
+  async function resolveMarket() {
+    const sourceUrl = sourceUrlInput.value.trim();
+    if (!sourceUrl) {
+      txStatus.textContent = "Enter a source URL first.";
+      txStatus.classList.add("error");
+      return;
+    }
+    if (!writeClient) {
+      txStatus.textContent = "Connect a wallet first.";
+      txStatus.classList.add("error");
+      return;
+    }
+
+    resolveBtn.disabled = true;
+    txStatus.classList.remove("error");
+    txStatus.textContent = "Sending transaction…";
+
+    try {
+      const hash = await writeClient.writeContract({
+        address: CONTRACT_ADDRESS,
+        functionName: "resolve_market",
+        args: [sourceUrl],
+        value: 0,
+      });
+
+      txStatus.textContent = "Waiting for GenLayer consensus (leader + validators)…";
+
+      await writeClient.waitForTransactionReceipt({
+        hash,
+        status: TransactionStatus.ACCEPTED,
+      });
+
+      txStatus.textContent = "Resolved. Refreshing…";
+      await loadState();
+      txStatus.textContent = "";
+    } catch (err) {
+      console.error(err);
+      txStatus.textContent = "Transaction failed: " + (err?.message || "see console for details");
+      txStatus.classList.add("error");
+      resolveBtn.disabled = false;
+    }
+  }
+
+  connectBtn.addEventListener("click", connectWallet);
+  resolveBtn.addEventListener("click", resolveMarket);
+
+  loadState();
+</script>
 
 </body>
 </html>
