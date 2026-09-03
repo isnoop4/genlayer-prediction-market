@@ -35,8 +35,8 @@ the same evidence before consensus is reached.
 | Field | Value |
 |---|---|
 | Network | [NETWORK — studionet] |
-| Contract address | [0xE88Afe0fa00d8ab2156Aec593947D42558334AF0] |
-| Explorer link | [https://explorer-studio.genlayer.com/address/0xE88Afe0fa00d8ab2156Aec593947D42558334AF0] |
+| Contract address | [0xE7319C622Dd50AFDB7D8D01b78f06e61bf989b26] |
+| Explorer link | [https://explorer-studio.genlayer.com/address/0xE7319C622Dd50AFDB7D8D01b78f06e61bf989b26] |
 
 ## Tech Stack
 
